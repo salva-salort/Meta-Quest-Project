@@ -684,8 +684,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SafetyZoneSensor
   safeMaterial: {fileID: 2100000, guid: d3f949926ded93e4d8e477d0c830b0e4, type: 2}
   dangerMaterial: {fileID: 2100000, guid: 64b935c6feb58434499b366967e70331, type: 2}
-  eventoManoDerecha: peligro_mano_derecha
-  eventoManoIzquierda: peligro_mano_izquierda
+  eventoManoDerecha: right_hand_warning
+  eventoManoIzquierda: left_hand_warning
 --- !u!1 &97071741
 GameObject:
   m_ObjectHideFlags: 0
@@ -10919,6 +10919,10 @@ PrefabInstance:
     - target: {fileID: 1441949093026986904, guid: 2129561fd5ef2284086f81f4eb432d8f, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1441949093026986906, guid: 2129561fd5ef2284086f81f4eb432d8f, type: 3}
+      propertyPath: autoRunBhapticsPlayer
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

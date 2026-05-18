@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
-using System.Diagnostics; // Obligatorio para usar las listas (HashSets)
-// using Bhaptics.SDK2;
+using System.Diagnostics; 
+using Bhaptics.SDK2;
 
 public class SafetyZoneSensor : MonoBehaviour
 {
@@ -10,12 +10,11 @@ public class SafetyZoneSensor : MonoBehaviour
     public Material dangerMaterial;  // Material Rojo
     private MeshRenderer myRenderer;
     
-    // EL NUEVO SISTEMA: La "Lista de Asistencia" inteligente
     private HashSet<Collider> objetosDentro = new HashSet<Collider>();
 
     [Header("Configuración bHaptics")]
-    public string eventoManoDerecha = "peligro_mano_derecha";
-    public string eventoManoIzquierda = "peligro_mano_izquierda";
+    public string eventoManoDerecha = "right_hand_warning";
+    public string eventoManoIzquierda = "left_hand_warning";
 
     void Start() 
     {
@@ -56,11 +55,11 @@ public class SafetyZoneSensor : MonoBehaviour
 
             if (esManoDerecha)
             {
-                // BhapticsLibrary.Play(eventoManoDerecha);
+                BhapticsLibrary.Play(eventoManoDerecha);
             }
             else if (esManoIzquierda)
             {
-                // BhapticsLibrary.Play(eventoManoIzquierda);
+                BhapticsLibrary.Play(eventoManoIzquierda);
             }
         }
     }
@@ -70,8 +69,35 @@ public class SafetyZoneSensor : MonoBehaviour
         if (other.gameObject != this.gameObject)
         {
             // Tachamos el objeto de la lista cuando sale físicamente
-            objetosDentro.Remove(other);
-            ActualizarEstado();
+            if (objetosDentro.Remove(other))
+            {
+                ActualizarEstado();
+
+                // 1. Averiguamos de qué lado era la parte que acaba de salir
+                bool esManoDerecha = false;
+                bool esManoIzquierda = false;
+                Transform ancestroActual = other.transform;
+
+                while (ancestroActual != null)
+                {
+                    string nombre = ancestroActual.name.ToLower();
+                    if (nombre.Contains("right")) { esManoDerecha = true; break; }
+                    else if (nombre.Contains("left")) { esManoIzquierda = true; break; }
+                    ancestroActual = ancestroActual.parent;
+                }
+
+                // 2. Magia independiente: Verificamos si la mano ha salido por completo
+                if (esManoDerecha && !QuedaManoDentro("right"))
+                {
+                    // Ha salido un trozo derecho y ya no queda NADA derecho dentro
+                    BhapticsLibrary.StopByEventId(eventoManoDerecha);
+                }
+                else if (esManoIzquierda && !QuedaManoDentro("left"))
+                {
+                    // Ha salido un trozo izquierdo y ya no queda NADA izquierdo dentro
+                    BhapticsLibrary.StopByEventId(eventoManoIzquierda);
+                }
+            }
         }
     }
 
@@ -91,8 +117,27 @@ public class SafetyZoneSensor : MonoBehaviour
             // Lista completamente vacía
             myRenderer.material = safeMaterial;
             
-            // BhapticsLibrary.Stop(eventoManoDerecha);
-            // BhapticsLibrary.Stop(eventoManoIzquierda);
+            // Failsafe de seguridad: apagamos ambas
+            BhapticsLibrary.StopByEventId(eventoManoDerecha);
+            BhapticsLibrary.StopByEventId(eventoManoIzquierda);
         }
+    }
+
+    // Escanea la lista de asistencia buscando si QUEDA ALGUNA parte de ese lado concreto
+    private bool QuedaManoDentro(string lado)
+    {
+        foreach (Collider col in objetosDentro)
+        {
+            if (col != null)
+            {
+                Transform ancestroActual = col.transform;
+                while (ancestroActual != null)
+                {
+                    if (ancestroActual.name.ToLower().Contains(lado)) return true;
+                    ancestroActual = ancestroActual.parent;
+                }
+            }
+        }
+        return false; // No queda nada de ese lado
     }
 }
